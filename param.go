@@ -1,4 +1,4 @@
-// +build !agrasta127
+// +build !agrasta127,!agrasta383
 
 package agrasta
 import "fmt"

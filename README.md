@@ -27,7 +27,7 @@ BenchmarkNewMatrix         20000             87211 ns/op
 BenchmarkCrypt              3000            442646 ns/op
 ```
 
-For GWE setting, the ballpark figure seems that Rasta cuts proof sizes in half
+For GMW setting, the ballpark figure seems that Rasta cuts proof sizes in half
 compared to LowMC, but has a higher startup cost - making the usual PQ PK schemes
 in there about 2x slower. Still, this is very favorable tradeoff.
 
