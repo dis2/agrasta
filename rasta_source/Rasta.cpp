@@ -3,6 +3,7 @@
 #include <fstream>
 #include <cstdlib>
 #include <algorithm>
+#include <iomanip>
 
 #include "Rasta.h"
 
@@ -127,6 +128,12 @@ void Rasta::generate_Instance_all_new(const UINT64 nonce,
   return;
 }
 
+void dumpMat(std::vector<block> rmat) {
+    for (int i = 0; i < blocksize; i++) {
+	    std::cout << "mat[" << std::setw(2) << i << "] " << rmat[i] << "\n";
+    }
+}
+
 void Rasta::generate_Instance_lu(const UINT64 nonce,
                                  const UINT64 counter) {
   //Initialize RNG state
@@ -136,7 +143,7 @@ void Rasta::generate_Instance_lu(const UINT64 nonce,
   roundconstants.clear();
   for (unsigned r = 0; r <= rounds; ++r) {
     // Create matrix
-    std::vector<block> mat1, mat2;
+    std::vector<block> mat1, mat2, rmat;
     // Fill matrix with random bits
     mat1.clear();
     mat2.clear();
@@ -144,8 +151,16 @@ void Rasta::generate_Instance_lu(const UINT64 nonce,
       mat1.push_back(getrandblockfirstone(i));
       mat2.push_back(getrandblockfirstone(blocksize - i + 1));
     }
-//      std::cout << "Rank: " << rank_of_Matrix(MultiplyGF2MatrixTransposed(mat1, mat2)) << std::endl;
-    LinMatrices.push_back(MultiplyGF2MatrixTransposed(mat1, mat2));
+      std::cout << "Rank: " << rank_of_Matrix(MultiplyGF2MatrixTransposed(mat1, mat2)) << std::endl;
+      std::cout << "Rank: " << rank_of_Matrix(MultiplyGF2MatrixTransposed(mat2, mat1)) << std::endl;
+    rmat = MultiplyGF2MatrixTransposed(mat2, mat1);
+    std::cout << "Mat1: \n";
+    dumpMat(mat1);
+    std::cout << "Mat2: \n";
+    dumpMat(mat2);
+    std::cout << "Result: \n";
+    dumpMat(rmat);
+    LinMatrices.push_back(rmat);
     roundconstants.push_back(getrandblock());
   }
 
@@ -297,13 +312,17 @@ void Rasta::initrand(const UINT64 nonce, const UINT64 counter) {
 
 bool Rasta::getrandbit() {
   bool tmp = 0;
+  static int counter;
   tmp = (bool) ((shakestate[squeezedbits / 8] >> (squeezedbits % 8)) & 1);
   squeezedbits++;
   if (squeezedbits == shakerate) {
     KeccakF1600_StatePermute(shakestate);
     squeezedbits = 0;
   }
-  return tmp;
+  counter++;
+  //return (counter>>3)&1;
+  return 1;
+//  return tmp;
 }
 
 //Shake taken from Keccak Code package

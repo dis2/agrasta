@@ -5,8 +5,8 @@
 #include <vector>
 #include <string>
 
-const unsigned blocksize = 219;   // Block size in bits
-const unsigned rounds = 6; // Number of rounds
+const unsigned blocksize = 127;   // Block size in bits
+const unsigned rounds = 1; // Number of rounds
 
 
 typedef std::bitset<blocksize> block; // Store messages and states

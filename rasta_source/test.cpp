@@ -64,7 +64,7 @@
 int main() {
   // Example usage of the Rasta class
   // Blocksize and number of rounds can be configured in Rasta.h
-  Rasta cipher(0xFFD54AA, randall);
+  Rasta cipher(0xFFD54AA, lu);
   block m;
   keyblock key;
 
