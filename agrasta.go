@@ -64,6 +64,7 @@ func (s *State) NewMatrix() (res Matrix) {
 	return
 }
 
+
 func (r *Block) GetBit(nn int) uint64 {
 	n := uint(nn)
 	return (r[n/64] >> (n%64))&1
@@ -181,6 +182,100 @@ func (s *State) PRF(key *Block) (c Block) {
 	}
 	return
 }
+// Generate matrix, and immediately compute vector product with it, that is:
+// m := genMatrix()
+// t = c * m
+func (s *State) NewMatrixMul(c *Block) (t Block) {
+	// first, generate the lower triangular
+	var LT [LTSize]uint64
+	var i,j int
+	pos := 0
+	for i = 0; i < BlockSize; i++ {
+		ltlimit := i/64
+		for j = 0; j < ltlimit; j++ {
+			LT[pos] = s.rand()
+			pos++
+		}
+		one := uint64(1)<<(uint(i)%64)
+		LT[pos] = (s.rand() & (one-1)) | one
+		pos++
+	}
+
+	// now generate the upper left triangular
+	// we compute the final LU product on the fly
+	for i = BlockSize-1; i >= 0; i-- {
+		utlimit := i/64
+		// make up our (temporary) upper left row
+		var UT [BlockWords]uint64
+		for j = 0; j < utlimit; j++ {
+			UT[j] = s.rand()
+		}
+		one := uint64(1)<<(uint(i)%64)
+		UT[j] = (s.rand() & (one-1)) | one
+		// and multiply it with the other we saved in LT
+		pos = 0
+		var resrow Block
+		for j = 0; j < BlockSize; j++ {
+			ltlimit := j/64
+			var k int
+			parity := 0
+			for k = 0; k <= ltlimit; k++ {
+				parity += bits.OnesCount64(LT[pos] & UT[k])
+				pos++
+			}
+			resrow.OrBit(j, uint64(parity))
+		}
+		// We now have a complete row, use it to compute vector product,
+		// then drop the result on the floor as we no longer need it.
+		parity := 0
+		for j = 0; j < BlockWords; j++ {
+			parity += bits.OnesCount64(resrow[j] & c[j])
+		}
+		t.OrBit(BlockSize-1-i, uint64(parity))
+	}
+	return
+}
+
+
+
+// Generates one PRF block given a key, nonce and counter.
+// Coalesced matrix generation / vector product variant.
+func (s *State) PRF2(key *Block) (c Block) {
+	// PRF is just the key at first
+	c = *key
+
+	r := 0
+	var xp1, xp2 Block
+	for {
+		// Generate new matrix, and compute vector product
+		c = s.NewMatrixMul(&c)
+
+		// add round constants
+		for i := 0; i < BlockWords; i++ {
+			c[i] ^= s.rand()
+		}
+
+		// Skip substitution in last round
+		if r == Rounds {
+			break
+		}
+		r++
+
+		// x-transform
+		xp1.Ror(&xp1, 1)
+		xp2.Ror(&xp2, 2)
+		for i := 0; i < BlockWords; i++ {
+			c[i] ^= xp2[i] ^ (xp1[i] & xp2[i])
+		}
+	}
+
+	// Finally, remove the key
+	for i := 0; i < BlockWords; i++ {
+		c[i] ^= key[i]
+	}
+	return
+}
+
 
 // Instantiate matrices with nonce/counter and  encrypt one message
 func (s *State) Crypt(key, msg *Block, nonce []byte, counter uint64) (c Block) {
@@ -193,12 +288,14 @@ func (s *State) Crypt(key, msg *Block, nonce []byte, counter uint64) (c Block) {
 	return
 }
 
-func main() {
-	s := State{}
-	s.ShakeHash = sha3.NewShake256()
-	mt := s.NewMatrix()
-	mt.Dump()
-	fmt.Printf("%d\n", mt.Rank())
+// Instantiate matrices with nonce/counter and  encrypt one message
+func (s *State) Crypt2(key, msg *Block, nonce []byte, counter uint64) (c Block) {
+	s.SetState(nonce, counter)
+	c = s.PRF2(key)
+	// xor message with the PRF
+	for i := 0; i < BlockWords; i++ {
+		c[i] ^= msg[i]
+	}
+	return
 }
-
 
