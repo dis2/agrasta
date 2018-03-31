@@ -10,9 +10,11 @@ TITLE=demo
 .PHONY : all clean
 
 # make all
-all: test
+all: test mtxtest
 
-test: *.cpp *.h
+test: Rasta.cpp test.cpp *.h
+	$(CXX) $(CXXFLAGS) $^ -o $@
+mtxtest: Rasta.cpp mtxtest.cpp *.h
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
 run: test

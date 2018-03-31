@@ -5,7 +5,7 @@
 #include <vector>
 #include <string>
 
-const unsigned blocksize = 127;   // Block size in bits
+const unsigned blocksize = 255;   // Block size in bits
 const unsigned rounds = 1; // Number of rounds
 
 
@@ -29,7 +29,6 @@ public:
     void set_key (keyblock k);
     instanceGeneration instance_;
 
-private:
 // Rasta private data members //
     std::vector<std::vector<block>> LinMatrices;
         // Stores the binary matrices for each round
@@ -74,5 +73,6 @@ private:
     bool  getrandbit ();
 
 };
+void dumpMat(std::vector<block> rmat);
 
 #endif

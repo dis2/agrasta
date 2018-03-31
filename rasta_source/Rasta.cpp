@@ -321,8 +321,8 @@ bool Rasta::getrandbit() {
   }
   counter++;
   //return (counter>>3)&1;
-  return 1;
-//  return tmp;
+  //return 1;
+  return tmp;
 }
 
 //Shake taken from Keccak Code package
